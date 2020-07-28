@@ -1,0 +1,39 @@
+<html><head><title>Backup NetScaler</title><HTA:APPLICATION ID="HTA" APPLICATIONNAME="Backup NetScaler" SCROLL="no" SINGLEINSTANCE="yes" BORDER="thin" BORDERSTYLE="normal" CAPTION="yes" ICON="citrix.ico" MAXIMIZEBUTTON="no" MINIMIZEBUTTON="yes" SHOWINTASKBAR="yes" SYSMENU="yes" VERSION="0.2" WINDOWSTATE="normal"></head>
+<script language="VBScript">
+window.resizeto 300,280
+Dim WSH : Set WSH = CreateObject("WScript.Shell")
+Dim FSO : Set FSO = CreateObject("Scripting.FileSystemObject")
+strCurrentDir = WSH.CurrentDirectory
+
+'Check Required Files
+If NOT FSO.FileExists(strCurrentDir & "\putty.exe") Then msgbox "putty.exe is missing in " & strCurrentDir & vbcrlf : window.close
+If NOT FSO.FileExists(strCurrentDir & "\pscp.exe") Then msgbox "pscp.exe is missing in " & strCurrentDir : window.close
+
+Function Backup
+	MSG.InnerHTML = "Backup of " & NSIP.Value & " is running"
+	If Full.Checked Then
+		Tijd = year(now) & "-" & right("00" & month(now),2) & "-" & right("00" & day(now),2) & "_" & hour(now) & "." & minute(now)
+		WSH.Run "cmd /c echo create system backup " & Tijd & " -level full -comment " & Tijd & " > """ & strCurrentDir & "\putty.txt""",0,true
+		WSH.Run """" & strCurrentDir & "\putty.exe"" -ssh " & NSIP.Value & " -l " & User.Value & " -pw " & Password.Value & " -m """ & strCurrentDir & "\putty.txt""",1,true
+		WSH.Run """" & strCurrentDir & "\pscp.exe"" -r -sftp -l " & User.Value & " -pw " & Password.Value & " " & NSIP.Value & ":/var/ns_sys_backup/" & Tijd & ".tgz " & strCurrentDir & "\" & NSIP.Value & "_" & Tijd & ".tgz",0,true
+		WSH.Run "cmd /c echo rm system backup " & Tijd & " > """ & strCurrentDir & "\putty.txt""",0,true
+		WSH.Run """" & strCurrentDir & "\putty.exe"" -ssh " & NSIP.Value & " -l " & User.Value & " -pw " & Password.Value & " -m """ & strCurrentDir & "\putty.txt""",0,true
+		WSH.Run "cmd /c del """ & strCurrentDir & "\putty.txt""",0,true
+	End If
+	If Config.Checked Then
+		WSH.Run """" & strCurrentDir & "\pscp.exe"" -r -sftp -l " & User.Value & " -pw " & Password.Value & " " & NSIP.Value & ":/flash/nsconfig/ns.conf " & strCurrentDir & "\" & NSIP.Value & "_ns.conf",1,true
+	End If
+	MSG.InnerHTML = "Backup Finished"
+End Function
+
+</script>
+<style type="text/css">
+Body {font-family:Tahoma;font-weight:Bold;font-size:10pt;}
+Table {font-family:Tahoma;font-weight:Bold;font-size:10pt;}	
+</style>
+<body><center><h2>Backup NetScaler</h2><table>
+<tr><td><input type="radio" name="what" ID="Full" CHECKED>Full Backup</td><td><input type="radio" name="what" ID="Config">Config Only</td></tr>
+<tr><td>Username:</td><td><input type="text" ID="user" Value="nsroot"></td></tr>
+<tr><td>Password:</td><td><input type="text" ID="Password" Value=""></td></tr>
+<tr><td>NetScaler IP:</td><td><input type="text" ID="NSIP" Value=""></td></tr>
+</table><input type="button" Value="Backup" OnClick="Backup"><br><br><span ID="MSG"></span></center></body></html>
