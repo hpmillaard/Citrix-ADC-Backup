@@ -1,0 +1,5 @@
+# Citrix-ADC-Backup
+Backup your NetScaler and download the Full Backup or configuration file to your Windows computer with just a few mouse clicks
+
+The hta file needs putty.exe and pscp.exe [https://putty.org](from putty.org) in the same directory.
+The exe file contains all these files and an icon and was created with [https://www.winrar.com](WinRAR)
